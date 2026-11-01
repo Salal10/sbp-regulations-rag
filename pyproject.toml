@@ -1,0 +1,26 @@
+[project]
+name = "sbp-regulations-rag"
+version = "0.1.0"
+description = "Question answering over State Bank of Pakistan payment and consumer protection regulations, with cited answers"
+readme = "README.md"
+authors = [
+    { name = "Salal Yousuf", email = "85499847+Salal10@users.noreply.github.com" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "google-genai>=2.34.0",
+    "httpx>=0.28.1",
+    "jupyter>=1.1.1",
+    "numpy>=2.5.4",
+    "pandas>=3.1.0",
+    "pymupdf>=2.0",
+    "pypdf>=6.21.4",
+    "python-dotenv>=1.2.4",
+]
+
+[project.scripts]
+sbp-regulations-rag = "sbp_regulations_rag:main"
+
+[build-system]
+requires = ["uv_build>=0.13.1,<0.14.0"]
+build-backend = "uv_build"
