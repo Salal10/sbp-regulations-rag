@@ -1,0 +1,59 @@
+import json
+import re
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+from dotenv import load_dotenv
+from google import genai
+from rank_bm25 import BM25Okapi
+
+from sbp_regulations_rag.embeddings import EMBEDDINGS_PATH, embed_texts, normalize
+
+CHUNKS_PATH = Path("data/processed/chunks.jsonl")
+QUERY_CACHE_PATH = Path("data/processed/query_embeddings.json")
+
+
+def load_chunks():
+    return pd.read_json(CHUNKS_PATH, lines=True)
+
+
+def tokenize(text):
+    return re.findall(r"[a-z0-9]+", text.lower())
+
+
+class KeywordSearch:
+    def __init__(self, chunks):
+        self.chunks = chunks
+        self.bm25 = BM25Okapi([tokenize(text) for text in chunks["text"]])
+
+    def search(self, query, k=10):
+        scores = self.bm25.get_scores(tokenize(query))
+        top = scores.argsort()[::-1][:k]
+        return self.chunks.iloc[top].assign(score=scores[top])
+
+
+class VectorSearch:
+    def __init__(self, chunks, dims=3072):
+        load_dotenv()
+        self.client = genai.Client()
+        self.chunks = chunks
+        self.dims = dims
+        vectors = np.load(EMBEDDINGS_PATH)
+        if len(vectors) != len(chunks):
+            raise ValueError("chunk_embeddings.npy doesn't match chunks.jsonl - run embeddings again")
+        self.vectors = normalize(vectors[:, :dims])
+        self.cache = json.loads(QUERY_CACHE_PATH.read_text()) if QUERY_CACHE_PATH.exists() else {}
+
+    def embed_query(self, query):
+        if query not in self.cache:
+            vector = embed_texts(self.client, [query], "RETRIEVAL_QUERY")[0]
+            self.cache[query] = vector.tolist()
+            QUERY_CACHE_PATH.write_text(json.dumps(self.cache))
+        vector = np.array([self.cache[query]], dtype=np.float32)
+        return normalize(vector[:, :self.dims])[0]
+
+    def search(self, query, k=10):
+        scores = self.vectors @ self.embed_query(query)
+        top = scores.argsort()[::-1][:k]
+        return self.chunks.iloc[top].assign(score=scores[top])
