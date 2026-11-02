@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from sbp_regulations_rag.search import KeywordSearch, VectorSearch, load_chunks
+from sbp_regulations_rag.search import HybridSearch, KeywordSearch, VectorSearch, load_chunks
 
 QUESTIONS_PATH = Path("data/eval/questions.csv")
 RESULTS_DIR = Path("results")
@@ -45,15 +45,10 @@ def evaluate(searcher, name):
 
 if __name__ == "__main__":
     chunks = load_chunks()
-    bm25 = evaluate(KeywordSearch(chunks), "bm25")
-    vector_3072 = evaluate(VectorSearch(chunks, dims=3072), "vector_3072")
-    vector_768 = evaluate(VectorSearch(chunks, dims=768), "vector_768")
-
-    ranks = pd.DataFrame({
-        "question": bm25["question"].str[:70],
-        "bm25": bm25["rank"],
-        "vec_3072": vector_3072["rank"],
-        "vec_768": vector_768["rank"],
-    })
-    print("\nQuestions missed by at least one method (rank in top 10, blank = not found):")
-    print(ranks[ranks[["bm25", "vec_3072", "vec_768"]].isna().any(axis=1)].to_string())
+    keyword = KeywordSearch(chunks)
+    vector = VectorSearch(chunks, dims=3072)
+    evaluate(keyword, "bm25")
+    evaluate(vector, "vector_3072")
+    evaluate(VectorSearch(chunks, dims=1536), "vector_1536")
+    evaluate(VectorSearch(chunks, dims=768), "vector_768")
+    evaluate(HybridSearch([keyword, vector]), "hybrid_rrf")

@@ -57,3 +57,19 @@ class VectorSearch:
         scores = self.vectors @ self.embed_query(query)
         top = scores.argsort()[::-1][:k]
         return self.chunks.iloc[top].assign(score=scores[top])
+
+class HybridSearch:
+    def __init__(self, searchers, rrf_k=60, candidates=50):
+        self.searchers = searchers
+        self.rrf_k = rrf_k
+        self.candidates = candidates
+        self.chunks = searchers[0].chunks.set_index("chunk_id", drop=False)
+
+    def search(self, query, k=10):
+        scores = {}
+        for searcher in self.searchers:
+            results = searcher.search(query, k=self.candidates)
+            for rank, chunk_id in enumerate(results["chunk_id"], start=1):
+                scores[chunk_id] = scores.get(chunk_id, 0) + 1 / (self.rrf_k + rank)
+        top = sorted(scores, key=scores.get, reverse=True)[:k]
+        return self.chunks.loc[top].assign(score=[scores[c] for c in top])

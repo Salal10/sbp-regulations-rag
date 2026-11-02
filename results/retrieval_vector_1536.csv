@@ -1,0 +1,43 @@
+qid,source,question,rank
+q01,llm,What is the duration that Authorized Financial Institutions are required to retain business relationship records?,1.0
+q02,llm,Which financial institutions are permitted to offer branchless banking services under these regulations?,1.0
+q03,llm,What is the official term for a representative who delivers basic financial services to customers on behalf of a financial institution?,1.0
+q04,llm,How should financial institutions structure Home Remittances Accounts in relation to existing mobile wallets?,1.0
+q05,llm,What actions should financial institutions take if they suspect money laundering and believe that conducting customer due diligence might alert the customer?,1.0
+q06,llm,Which account tier is eligible to receive an international transaction facility on their debit cards?,1.0
+q07,llm,What two core characteristics define fair treatment for bank complainants according to the guidelines?,1.0
+q08,llm,When did the guidelines for consumer grievance handling in banks officially take effect?,1.0
+q09,llm,What specific approach should financial institutions take when handling grievances from senior citizens?,1.0
+q10,llm,How are elderly or physically disabled individuals classified under the complaint handling rules?,2.0
+q11,llm,What is the maximum number of days allowed to resolve minor complaints that do not require an extensive investigation?,1.0
+q12,llm,What is the deadline for financial institutions to submit their quarterly performance returns regarding complaint handling to the State Bank of Pakistan?,1.0
+q13,llm,What documentation must a foreign institution provide from its home regulator when applying to sponsor a digital bank?,1.0
+q14,llm,What financial milestone must be reached before a digital bank can successfully finish its transition period?,6.0
+q15,llm,Can a digital bank utilize management personnel from its parent company for its CEO position through deputation?,1.0
+q16,llm,What type of financial security must the founders provide when applying to start trial operations for a digital bank?,2.0
+q17,llm,What details must be included in the distribution strategy of an enablement model?,2.0
+q18,llm,What is the minimum operating history required for the majority shareholders of a microfinance bank or electronic money institution applying to establish a digital bank?,1.0
+q19,llm,What is the deadline for a financial institution to notify a consumer that no transaction error was found after an investigation?,1.0
+q20,llm,Can the State Bank take immediate action against a payment system operator before issuing a final order?,1.0
+q21,llm,How long must financial institutions keep digital records of electronic money transfers?,3.0
+q22,llm,In what situations is a financial institution excused from liability if it fails to execute an electronic fund transfer?,1.0
+q23,llm,How is Systemic Risk defined within the context of electronic fund transfer regulations?,1.0
+q24,llm,What are the maximum penalties for obstructing a central bank representative during an inspection related to payment instruments?,1.0
+q25,llm,What is the maximum monetary fine for intentionally providing false information or failing to disclose required details under the Electronic Fund Transfer Act?,1.0
+q26,llm_edited,How many years of audited financial statements must a company applying for an EMI licence submit?,4.0
+q27,llm,What condition must be met before an Electronic Money Institution is granted a license to start commercial operations?,3.0
+q28,llm,How are family members of an individual defined in the regulations?,1.0
+q29,llm_edited,"During pilot operations, what is the monthly load limit for an e-money wallet opened with biometric verification?",1.0
+q30,llm,What specific customer details must electronic money institutions gather when issuing payment instruments?,1.0
+q31,llm,What is the maximum percentage of board members from the same family allowed for an electronic money institution?,3.0
+q32,llm,What is required before an electronic money institution can transfer any operational duties to a foreign location?,2.0
+q33,llm,How often must payment system operators and payment service providers submit their outstanding complaints and disputes report to the State Bank of Pakistan?,1.0
+q34,llm,Within how many days must the appointment of a new Key Executive be reported to the central bank?,1.0
+q35,llm,To whom does the internal Compliance Officer of a payment system operator report directly?,1.0
+q36,llm,What is the deadline for operational entities currently acting as a payment system operator or payment service provider to seek authorization from the central bank?,1.0
+q37,llm,When is the security deposit for a Payment System Operator or Payment Service Provider returned?,2.0
+q38,llm,Are payment system operators required to connect to the National Payment Gateway if the central bank establishes one?,1.0
+q39,hand,Can a mobile wallet company let its users buy and sell Bitcoin?,2.0
+q40,hand,Can an e-money company connect to Raast?,1.0
+q41,hand,Do digital banks have to join the Deposit Protection Corporation?,1.0
+q42,hand,Below what age is a customer treated as a minor under the EMI rules?,
