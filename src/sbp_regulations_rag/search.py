@@ -33,30 +33,36 @@ class KeywordSearch:
         return self.chunks.iloc[top].assign(score=scores[top])
 
 
-class VectorSearch:
-    def __init__(self, chunks, dims=3072):
+class QueryEmbedder:
+    def __init__(self):
         load_dotenv()
         self.client = genai.Client()
+        self.cache = json.loads(QUERY_CACHE_PATH.read_text()) if QUERY_CACHE_PATH.exists() else {}
+
+    def embed(self, query, dims=3072):
+        if query not in self.cache:
+            vector = embed_texts(self.client, [query], "RETRIEVAL_QUERY")[0]
+            self.cache[query] = vector.tolist()
+            QUERY_CACHE_PATH.write_text(json.dumps(self.cache))
+        vector = np.array([self.cache[query]], dtype=np.float32)
+        return normalize(vector[:, :dims])[0]
+
+
+class VectorSearch:
+    def __init__(self, chunks, dims=3072):
+        self.embedder = QueryEmbedder()
         self.chunks = chunks
         self.dims = dims
         vectors = np.load(EMBEDDINGS_PATH)
         if len(vectors) != len(chunks):
             raise ValueError("chunk_embeddings.npy doesn't match chunks.jsonl - run embeddings again")
         self.vectors = normalize(vectors[:, :dims])
-        self.cache = json.loads(QUERY_CACHE_PATH.read_text()) if QUERY_CACHE_PATH.exists() else {}
-
-    def embed_query(self, query):
-        if query not in self.cache:
-            vector = embed_texts(self.client, [query], "RETRIEVAL_QUERY")[0]
-            self.cache[query] = vector.tolist()
-            QUERY_CACHE_PATH.write_text(json.dumps(self.cache))
-        vector = np.array([self.cache[query]], dtype=np.float32)
-        return normalize(vector[:, :self.dims])[0]
 
     def search(self, query, k=10):
-        scores = self.vectors @ self.embed_query(query)
+        scores = self.vectors @ self.embedder.embed(query, self.dims)
         top = scores.argsort()[::-1][:k]
         return self.chunks.iloc[top].assign(score=scores[top])
+
 
 class HybridSearch:
     def __init__(self, searchers, rrf_k=60, candidates=50):
