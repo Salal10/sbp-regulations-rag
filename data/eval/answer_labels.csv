@@ -1,2 +1,3 @@
 qid,correctness,note
+q11,partial,"Gives 15 days but leaves out the 7-working-day final reply"
 q14,partial,"Missing PKR 4 billion, the key number"
