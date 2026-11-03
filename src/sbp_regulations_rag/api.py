@@ -1,23 +1,36 @@
+import logging
+import time
 from contextlib import asynccontextmanager
 
+from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from google import genai
+from google.genai import types
 from pydantic import BaseModel, Field
 
 from sbp_regulations_rag.answer import TOP_K, ask_model
-from sbp_regulations_rag.db import PgVectorSearch, connect
+from sbp_regulations_rag.db import PgVectorSearch, make_pool
+from sbp_regulations_rag.search import QueryEmbedder
 
+GEMINI_TIMEOUT_MS = 30_000
+ATTEMPTS = 2
+WAIT_SECONDS = 2
+
+logger = logging.getLogger("uvicorn.error")
 state = {}
 
 
 @asynccontextmanager
 async def lifespan(app):
-    conn = connect()
-    state["conn"] = conn
-    state["searcher"] = PgVectorSearch(conn)
-    state["client"] = genai.Client()
+    load_dotenv()
+    client = genai.Client(http_options=types.HttpOptions(timeout=GEMINI_TIMEOUT_MS))
+    embedder = QueryEmbedder(client, save_to_disk=False, attempts=ATTEMPTS, wait=WAIT_SECONDS)
+    pool = make_pool()
+    state["pool"] = pool
+    state["client"] = client
+    state["searcher"] = PgVectorSearch(pool, embedder)
     yield
-    conn.close()
+    pool.close()
 
 
 app = FastAPI(title="SBP regulations Q&A", lifespan=lifespan)
@@ -42,15 +55,17 @@ class AskResponse(BaseModel):
 
 @app.get("/health")
 def health():
-    state["conn"].execute("SELECT 1")
+    with state["pool"].connection() as conn:
+        conn.execute("SELECT 1")
     return {"status": "ok"}
 
 
 @app.post("/ask", response_model=AskResponse)
 def ask(request: AskRequest):
-    results = state["searcher"].search(request.question, k=TOP_K)
+    start = time.perf_counter()
     try:
-        reply = ask_model(state["client"], request.question, results)
+        results = state["searcher"].search(request.question, k=TOP_K)
+        reply = ask_model(state["client"], request.question, results, ATTEMPTS, WAIT_SECONDS)
     except RuntimeError:
         raise HTTPException(status_code=503, detail="The language model is unavailable, try again later")
 
@@ -64,4 +79,6 @@ def ask(request: AskRequest):
         )
         for chunk in (results.iloc[n - 1] for n in numbers)
     ]
+    seconds = time.perf_counter() - start
+    logger.info(f"ask: found={reply.found} citations={len(citations)} chars={len(request.question)} seconds={seconds:.2f}")
     return AskResponse(found=reply.found, answer=reply.answer, citations=citations)

@@ -14,8 +14,8 @@ BATCH_SIZE = 90
 SECONDS_BETWEEN_BATCHES = 62
 
 
-def embed_texts(client, texts, task_type):
-    for attempt in range(3):
+def embed_texts(client, texts, task_type, attempts=3, wait=60):
+    for attempt in range(attempts):
         try:
             result = client.models.embed_content(
                 model=MODEL,
@@ -26,9 +26,9 @@ def embed_texts(client, texts, task_type):
         except errors.APIError as e:
             if e.code != 429 and e.code < 500:
                 raise
-            print(f"  error {e.code}, waiting 60 s")
-            time.sleep(60)
-    raise RuntimeError("embedding failed 3 times")
+            print(f"  error {e.code}, waiting {wait} s")
+            time.sleep(wait)
+    raise RuntimeError(f"embedding failed {attempts} times")
 
 
 def normalize(vectors):

@@ -1,6 +1,7 @@
 import time
 from pathlib import Path
 
+import httpx
 import pandas as pd
 from dotenv import load_dotenv
 from google import genai
@@ -47,9 +48,9 @@ def format_sources(results):
     return "\n\n".join(parts)
 
 
-def ask_model(client, question, results):
+def ask_model(client, question, results, attempts=3, wait=30):
     prompt = PROMPT.format(sources=format_sources(results), question=question)
-    for attempt in range(3):
+    for attempt in range(attempts):
         try:
             response = client.models.generate_content(
                 model=MODEL,
@@ -57,10 +58,10 @@ def ask_model(client, question, results):
                 config={"response_mime_type": "application/json", "response_schema": Answer},
             )
             return response.parsed
-        except errors.APIError as e:
-            print(f"  error {e.code}, retrying")
-            time.sleep(30 * (attempt + 1))
-    raise RuntimeError("failed 3 times")
+        except (errors.APIError, httpx.TimeoutException) as e:
+            print(f"  error {e}, retrying")
+            time.sleep(wait * (attempt + 1))
+    raise RuntimeError(f"failed {attempts} times")
 
 
 def summarize(df):

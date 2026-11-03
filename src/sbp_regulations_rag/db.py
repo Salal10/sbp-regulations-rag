@@ -4,8 +4,10 @@ import numpy as np
 import pandas as pd
 import psycopg
 from dotenv import load_dotenv
+from google import genai
 from pgvector import HalfVector
 from pgvector.psycopg import register_vector
+from psycopg_pool import ConnectionPool
 
 from sbp_regulations_rag.embeddings import EMBEDDINGS_PATH, normalize
 from sbp_regulations_rag.evaluate import evaluate
@@ -33,6 +35,22 @@ def connect():
     return conn
 
 
+def configure(conn):
+    register_vector(conn)
+    conn.commit()
+
+
+def make_pool():
+    load_dotenv()
+    return ConnectionPool(
+        os.environ["DATABASE_URL"],
+        min_size=1,
+        max_size=5,
+        configure=configure,
+        check=ConnectionPool.check_connection,
+    )
+
+
 def load(conn):
     chunks = load_chunks()
     vectors = normalize(np.load(EMBEDDINGS_PATH))
@@ -49,25 +67,27 @@ def load(conn):
 
 
 class PgVectorSearch:
-    def __init__(self, conn):
-        self.conn = conn
-        self.embedder = QueryEmbedder()
+    def __init__(self, pool, embedder):
+        self.pool = pool
+        self.embedder = embedder
 
     def search(self, query, k=10):
         vector = HalfVector(self.embedder.embed(query))
-        rows = self.conn.execute(
-            """
-            SELECT chunk_id, doc, page_start, page_end, text, 1 - (embedding <=> %s) AS score
-            FROM chunks
-            ORDER BY embedding <=> %s
-            LIMIT %s
-            """,
-            (vector, vector, k),
-        ).fetchall()
+        with self.pool.connection() as conn:
+            rows = conn.execute(
+                """
+                SELECT chunk_id, doc, page_start, page_end, text, 1 - (embedding <=> %s) AS score
+                FROM chunks
+                ORDER BY embedding <=> %s
+                LIMIT %s
+                """,
+                (vector, vector, k),
+            ).fetchall()
         return pd.DataFrame(rows, columns=["chunk_id", "doc", "page_start", "page_end", "text", "score"])
 
 
 if __name__ == "__main__":
     with connect() as conn:
         load(conn)
-        evaluate(PgVectorSearch(conn), "pgvector_hnsw")
+    with make_pool() as pool:
+        evaluate(PgVectorSearch(pool, QueryEmbedder(genai.Client())), "pgvector_hnsw")

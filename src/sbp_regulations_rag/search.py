@@ -34,23 +34,28 @@ class KeywordSearch:
 
 
 class QueryEmbedder:
-    def __init__(self):
-        load_dotenv()
-        self.client = genai.Client()
-        self.cache = json.loads(QUERY_CACHE_PATH.read_text()) if QUERY_CACHE_PATH.exists() else {}
+    def __init__(self, client, save_to_disk=True, attempts=3, wait=60):
+        self.client = client
+        self.save_to_disk = save_to_disk
+        self.attempts = attempts
+        self.wait = wait
+        use_file = save_to_disk and QUERY_CACHE_PATH.exists()
+        self.cache = json.loads(QUERY_CACHE_PATH.read_text()) if use_file else {}
 
     def embed(self, query, dims=3072):
         if query not in self.cache:
-            vector = embed_texts(self.client, [query], "RETRIEVAL_QUERY")[0]
+            vector = embed_texts(self.client, [query], "RETRIEVAL_QUERY", self.attempts, self.wait)[0]
             self.cache[query] = vector.tolist()
-            QUERY_CACHE_PATH.write_text(json.dumps(self.cache))
+            if self.save_to_disk:
+                QUERY_CACHE_PATH.write_text(json.dumps(self.cache))
         vector = np.array([self.cache[query]], dtype=np.float32)
         return normalize(vector[:, :dims])[0]
 
 
 class VectorSearch:
     def __init__(self, chunks, dims=3072):
-        self.embedder = QueryEmbedder()
+        load_dotenv()
+        self.embedder = QueryEmbedder(genai.Client())
         self.chunks = chunks
         self.dims = dims
         vectors = np.load(EMBEDDINGS_PATH)
