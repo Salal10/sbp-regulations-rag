@@ -101,3 +101,4 @@ Then open http://127.0.0.1:8200/docs. An answer takes about 1.6 seconds.
 - No login or rate limit on the API, so anyone who can reach it can use your Gemini quota.
 - The free Gemini tier may use prompts for training, so don't use it with private documents.
 - Not legal advice. Regulations get amended, and these are the versions listed above.
+
